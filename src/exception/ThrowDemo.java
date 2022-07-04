@@ -5,7 +5,7 @@ public class ThrowDemo {
         Person p =new Person();
         try {
             p.setAge(2000);
-        } catch (Exception e) {
+        } catch (IllegalAgeException e) {
             e.printStackTrace();
         }
         System.out.println("此人年龄:"+p.getAge());

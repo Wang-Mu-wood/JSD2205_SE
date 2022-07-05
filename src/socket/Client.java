@@ -12,7 +12,7 @@ public class Client {
 
         try {
             System.out.println("正在链接服务器");
-            socket = new Socket("176.28.10.11",8088);
+            socket = new Socket("localhost",8088);
             System.out.println("与服务端建立链接");
         } catch (IOException e) {
             e.printStackTrace();

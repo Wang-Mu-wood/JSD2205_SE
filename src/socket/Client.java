@@ -8,27 +8,33 @@ import java.util.Scanner;
 public class Client {
     private Socket socket;
 
-    public Client(){
+    public Client() {
 
         try {
             System.out.println("正在链接服务器");
-            socket = new Socket("localhost",8088);
+            socket = new Socket("localhost", 8088);
             System.out.println("与服务端建立链接");
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public void start(){
+    public void start() {
         try {
+            SeverHandler severHandler = new SeverHandler();
+            Thread t = new Thread(severHandler);
+            t.setDaemon(true);
+            t.start();
+
             OutputStream out = socket.getOutputStream();
             OutputStreamWriter ows = new OutputStreamWriter(out, StandardCharsets.UTF_8);
             BufferedWriter bw = new BufferedWriter(ows);
-            PrintWriter pw  = new PrintWriter(bw,true);
+            PrintWriter pw = new PrintWriter(bw, true);
+
             Scanner scanner = new Scanner(System.in);
-            while (true){
+            while (true) {
                 String line = scanner.nextLine();
-                if ("exit".equals(line)){
+                if ("exit".equals(line)) {
                     pw.println("拜拜");
                     break;
                 }
@@ -36,7 +42,7 @@ public class Client {
             }
         } catch (IOException e) {
             e.printStackTrace();
-        }finally {
+        } finally {
             try {
                 socket.close();
             } catch (IOException e) {
@@ -50,7 +56,21 @@ public class Client {
         client.start();
     }
 
+    private class SeverHandler implements Runnable{
+        @Override
+        public void run() {
+            try {
+                InputStream in = socket.getInputStream();
+                InputStreamReader isr = new InputStreamReader(in, StandardCharsets.UTF_8);
+                BufferedReader br = new BufferedReader(isr);
 
+                String line;
+                while ((line = br.readLine()) != null) {
+                    System.out.println(line);
+                }
+            } catch (IOException e) {
 
-
+            }
+        }
+    }
 }

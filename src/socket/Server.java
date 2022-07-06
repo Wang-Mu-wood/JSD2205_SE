@@ -4,10 +4,13 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 public class Server {
     private ServerSocket serverSocket;
-    public Server(){
+    private PrintWriter[] allOut = {};
+
+    public Server() {
 
         try {
             System.out.println("正在启动服务端...");
@@ -19,7 +22,7 @@ public class Server {
 
     }
 
-    public void start(){
+    public void start() {
         try {
 
             while (true) {
@@ -41,29 +44,64 @@ public class Server {
         server.start();
     }
 
-    private class ClientHandler implements Runnable{
+    private class ClientHandler implements Runnable {
         private Socket socket;
         private String host;
 
-        public ClientHandler(Socket socket){
+        public ClientHandler(Socket socket) {
             this.socket = socket;
             host = socket.getInetAddress().getHostAddress();
         }
+
         @Override
         public void run() {
+            PrintWriter pw = null;
             try {
                 InputStream in = socket.getInputStream();
                 InputStreamReader isr = new InputStreamReader(in, StandardCharsets.UTF_8);
                 BufferedReader br = new BufferedReader(isr);
+
+                OutputStream out = socket.getOutputStream();
+                OutputStreamWriter osw = new OutputStreamWriter(out, StandardCharsets.UTF_8);
+                BufferedWriter bw = new BufferedWriter(osw);
+                pw = new PrintWriter(bw, true);
+                synchronized (Server.this) {
+                    allOut = Arrays.copyOf(allOut, allOut.length + 1);
+                    allOut[allOut.length - 1] = pw;
+                }
+                sendMessage(host+"上线了,当前在线人数："+allOut.length);
+
                 String line;
-                while (true) {
-                    if (!((line = br.readLine()) != null)) break;
-                    System.out.println(host+"说：" + line);
+                while ((line = br.readLine()) != null) {
+                    sendMessage(host+"说："+line);
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+
+            } finally {
+                synchronized (Server.this) {
+                    for (int i = 0; i < allOut.length; i++) {
+                        if (allOut[i] == pw) {
+                            allOut[i] = allOut[allOut.length - 1];
+                            allOut = Arrays.copyOf(allOut, allOut.length - 1);
+                            break;
+                        }
+                    }
+                }
+                sendMessage(host + "下线了，当前在线人数：" + allOut.length);
+                try {
+                    socket.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
 
+        }
+
+        private void sendMessage(String line){
+            System.out.println(line);
+            for (int i = 0; i < allOut.length; i++) {
+                allOut[i].println(line);
+            }
         }
     }
 }
